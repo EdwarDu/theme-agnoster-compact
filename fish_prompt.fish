@@ -13,10 +13,7 @@
 # set -g theme_hide_hostname no
 # set -g default_user your_normal_user
 
-
-
 set -g current_bg NONE
-set segment_separator \uE0B0
 set right_segment_separator \uE0B0
 set -q scm_prompt_blacklist; or set scm_prompt_blacklist
 
@@ -65,7 +62,7 @@ set -q fish_git_prompt_untracked_files; or set fish_git_prompt_untracked_files n
 # ===========================
 
 set -g __fish_git_prompt_showdirtystate 'yes'
-set -g __fish_git_prompt_char_dirtystate '±'
+set -g __fish_git_prompt_char_dirtystate '*'
 set -g __fish_git_prompt_char_cleanstate ''
 
 function parse_git_dirty
@@ -108,17 +105,15 @@ function prompt_segment -d "Function to draw a segment"
   if [ "$current_bg" != 'NONE' -a "$argv[1]" != "$current_bg" ]
     set_color -b $bg
     set_color $current_bg
-    echo -n "$segment_separator "
     set_color -b $bg
     set_color $fg
   else
     set_color -b $bg
     set_color $fg
-    echo -n " "
   end
   set current_bg $argv[1]
   if [ -n "$argv[3]" ]
-    echo -n -s $argv[3] " "
+    echo -n -s $argv[3]
   end
 end
 
@@ -126,10 +121,10 @@ function prompt_finish -d "Close open segments"
   if [ -n $current_bg ]
     set_color normal
     set_color $current_bg
-    echo -n "$segment_separator "
     set_color normal
   end
   set -g current_bg NONE
+  echo -n " "
 end
 
 
@@ -196,10 +191,10 @@ function prompt_hg -d "Display mercurial state"
       set bookmark (hg bookmarks | sed -nr 's/^.*\*\ +\b(\w*)\ +.*$/:\1/p')
       set state (hg_get_state)
       set revision (command hg id -n)
-      set branch_symbol \uE0A0
+      set branch_symbol "B]"
       set prompt_text "$branch_symbol $branch$bookmark:$revision"
       if [ "$state" = "0" ]
-          prompt_segment $color_hg_changed_bg $color_hg_changed_str $prompt_text " ±"
+          prompt_segment $color_hg_changed_bg $color_hg_changed_str $prompt_text "*"
       else
           prompt_segment $color_hg_bg $color_hg_str $prompt_text
       end
@@ -223,14 +218,14 @@ function prompt_git -d "Display the current git state"
     set ref (command git symbolic-ref HEAD 2> /dev/null)
     if [ $status -gt 0 ]
       set -l branch (command git show-ref --head -s --abbrev |head -n1 2> /dev/null)
-      set ref "➦ $branch "
+      set ref "D]$branch"
     end
-    set branch_symbol \uE0A0
-    set -l branch (echo $ref | sed  "s-refs/heads/-$branch_symbol -")
+    set branch_symbol "B]"
+    set -l branch (echo $ref | sed  "s-refs/heads/-$branch_symbol-")
     if [ "$dirty" != "" ]
-      prompt_segment $color_git_dirty_bg $color_git_dirty_str "$branch $dirty"
+      prompt_segment $color_git_dirty_bg $color_git_dirty_str "$branch$dirty"
     else
-      prompt_segment $color_git_bg $color_git_str "$branch $dirty"
+      prompt_segment $color_git_bg $color_git_str "$branch$dirty"
     end
   end
 end
@@ -240,7 +235,7 @@ function prompt_svn -d "Display the current svn state"
   set -l ref
   if command svn info >/dev/null 2>&1
     set branch (svn_get_branch)
-    set branch_symbol \uE0A0
+    set branch_symbol "B]"
     set revision (svn_get_revision)
     prompt_segment $color_svn_bg $color_svn_str "$branch_symbol $branch:$revision"
   end
@@ -266,22 +261,22 @@ end
 
 function prompt_status -d "the symbols for a non zero exit status, root and background jobs"
     if [ $RETVAL -ne 0 ]
-      prompt_segment $color_status_nonzero_bg $color_status_nonzero_str "✘"
+      prompt_segment $color_status_nonzero_bg $color_status_nonzero_str "E]"
     end
 
     if [ "$fish_private_mode" ]
-      prompt_segment $color_status_private_bg $color_status_private_str "🔒"
+      prompt_segment $color_status_private_bg $color_status_private_str "P]"
     end
 
     # if superuser (uid == 0)
     set -l uid (id -u $USER)
     if [ $uid -eq 0 ]
-      prompt_segment $color_status_superuser_bg $color_status_superuser_str "⚡"
+      prompt_segment $color_status_superuser_bg $color_status_superuser_str "R]"
     end
 
     # Jobs display
     if [ (jobs -l | wc -l) -gt 0 ]
-      prompt_segment $color_status_jobs_bg $color_status_jobs_str "⚙"
+      prompt_segment $color_status_jobs_bg $color_status_jobs_str "J]"
     end
 end
 
@@ -300,5 +295,6 @@ function fish_prompt
     type -q git; and prompt_git
     type -q svn; and prompt_svn
   end
+  echo -n ">"
   prompt_finish
 end
